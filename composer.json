@@ -1,5 +1,5 @@
 {
-  "name": "boatsis/telegram-client",
+  "name": "botasis/telegram-client",
   "type": "library",
   "description": "Yet another PHP Telegram bot client",
   "keywords": ["php", "telegram", "bot", "telegram bot"],
