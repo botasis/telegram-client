@@ -8,7 +8,7 @@ use Botasis\Client\Telegram\Entity\InlineKeyboard\InlineKeyboardUpdate;
 use Botasis\Client\Telegram\Entity\Message\Message;
 use Psr\Log\LoggerInterface;
 
-final readonly class TelegramClientLog implements TelegramClientInterface
+final readonly class ClientLog implements ClientInterface
 {
     public function __construct(private LoggerInterface $logger)
     {

@@ -6,11 +6,9 @@ namespace Botasis\Client\Telegram\Client;
 
 use Botasis\Client\Telegram\Entity\InlineKeyboard\InlineKeyboardUpdate;
 use Botasis\Client\Telegram\Entity\Message\Message;
-use Http\Discovery\Psr17FactoryDiscovery;
-use Http\Discovery\Psr18ClientDiscovery;
 use JsonException;
 use Psr\Http\Client\ClientExceptionInterface;
-use Psr\Http\Client\ClientInterface;
+use Psr\Http\Client\ClientInterface as HttpClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamFactoryInterface;
@@ -20,28 +18,21 @@ use Botasis\Client\Telegram\Client\Exception\TelegramRequestException;
 use Botasis\Client\Telegram\Client\Exception\TooManyRequestsException;
 use Botasis\Client\Telegram\Client\Exception\WrongEntitiesException;
 
-readonly class TelegramClientPsr implements TelegramClientInterface
+readonly class ClientPsr implements ClientInterface
 {
-    private ClientInterface $client;
-    private RequestFactoryInterface $requestFactory;
-    private StreamFactoryInterface $streamFactory;
 
     /**
      * @param string[] $errorsToIgnore
      */
     public function __construct(
         private string $token,
+        private HttpClientInterface $client,
+        private RequestFactoryInterface $requestFactory,
+        private StreamFactoryInterface $streamFactory,
         private string $uri = 'https://api.telegram.org',
         private array $errorsToIgnore = [],
-        ?ClientInterface $client = null,
-        ?RequestFactoryInterface $requestFactory = null,
-        ?StreamFactoryInterface $streamFactory = null,
         private LoggerInterface $logger = new NullLogger(),
-    )
-    {
-        $this->client = $client ?? Psr18ClientDiscovery::find();
-        $this->requestFactory = $requestFactory ?? Psr17FactoryDiscovery::findRequestFactory();
-        $this->streamFactory = $streamFactory ?? Psr17FactoryDiscovery::findStreamFactory();
+    ) {
     }
 
     /**

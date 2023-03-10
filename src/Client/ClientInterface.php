@@ -9,7 +9,7 @@ use Botasis\Client\Telegram\Client\Exception\TooManyRequestsException;
 use Botasis\Client\Telegram\Entity\InlineKeyboard\InlineKeyboardUpdate;
 use Botasis\Client\Telegram\Entity\Message\Message;
 
-interface TelegramClientInterface
+interface ClientInterface
 {
     /**
      * @throws TelegramRequestException
