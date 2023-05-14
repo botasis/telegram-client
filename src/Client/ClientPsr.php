@@ -4,8 +4,13 @@ declare(strict_types=1);
 
 namespace Botasis\Client\Telegram\Client;
 
+use Botasis\Client\Telegram\Client\Exception\TelegramRequestException;
+use Botasis\Client\Telegram\Client\Exception\TooManyRequestsException;
+use Botasis\Client\Telegram\Client\Exception\WrongEntitiesException;
 use Botasis\Client\Telegram\Entity\InlineKeyboard\InlineKeyboardUpdate;
+use Botasis\Client\Telegram\Entity\JoinRequestApproval;
 use Botasis\Client\Telegram\Entity\Message\Message;
+use Botasis\Client\Telegram\Entity\Message\MessageUpdate;
 use JsonException;
 use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Client\ClientInterface as HttpClientInterface;
@@ -14,9 +19,6 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
-use Botasis\Client\Telegram\Client\Exception\TelegramRequestException;
-use Botasis\Client\Telegram\Client\Exception\TooManyRequestsException;
-use Botasis\Client\Telegram\Client\Exception\WrongEntitiesException;
 
 readonly class ClientPsr implements ClientInterface
 {
@@ -48,7 +50,7 @@ readonly class ClientPsr implements ClientInterface
      * @throws ClientExceptionInterface
      * @throws JsonException
      */
-    public function updateMessage(mixed $message): ?array
+    public function updateMessage(MessageUpdate $message): ?array
     {
         return $this->send('editMessageText', $message->getArray());
     }
@@ -60,6 +62,18 @@ readonly class ClientPsr implements ClientInterface
     public function updateKeyboard(InlineKeyboardUpdate $message): ?array
     {
         return $this->send('editMessageReplyMarkup', $message->getArray());
+    }
+
+    /**
+     * @throws ClientExceptionInterface
+     * @throws JsonException
+     */
+    public function approveChatJoinRequest(JoinRequestApproval $approval): ?array
+    {
+        return $this->send(
+            'editMessageReplyMarkup',
+            ['chat_id' => $approval->chatId, 'user_id' => $approval->userId]
+        );
     }
 
     /**
