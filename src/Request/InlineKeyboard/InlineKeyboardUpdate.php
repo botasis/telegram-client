@@ -2,37 +2,32 @@
 
 declare(strict_types=1);
 
-namespace Botasis\Client\Telegram\Entity\Message;
+namespace Botasis\Client\Telegram\Request\InlineKeyboard;
 
-use Botasis\Client\Telegram\Entity\InlineKeyboard\InlineKeyboardButton;
+use Botasis\Client\Telegram\Request\TelegramRequest;
 
-final readonly class MessageUpdate
+final class InlineKeyboardUpdate extends TelegramRequest
 {
     /**
      * @param InlineKeyboardButton[][] $inlineKeyboard
      */
     public function __construct(
-        public string $text,
-        public MessageFormat $format,
-        public string $chatId,
-        public string $messageId,
-        public array $inlineKeyboard = [],
+        private readonly string $chatId,
+        private readonly string $messageId,
+        private readonly array $inlineKeyboard = [],
+        ?callable $successCallback = null,
+        ?callable $errorCallback = null,
     ) {
+        parent::__construct('editMessageReplyMarkup', $this->createData(), $successCallback, $errorCallback);
     }
 
-    public function getArray(): array
+    private function createData(): array
     {
         $result = [
-            'text' => $this->text,
             'chat_id' => $this->chatId,
             'message_id' => $this->messageId,
+            'reply_markup' => [],
         ];
-
-        if ($this->format === MessageFormat::MARKDOWN) {
-            $result['parse_mode'] = 'MarkdownV2';
-        } elseif ($this->format === MessageFormat::HTML) {
-            $result['parse_mode'] = 'HTML';
-        }
 
         foreach ($this->inlineKeyboard as $i => $row) {
             foreach ($row as $button) {

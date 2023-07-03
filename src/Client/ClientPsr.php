@@ -7,10 +7,8 @@ namespace Botasis\Client\Telegram\Client;
 use Botasis\Client\Telegram\Client\Exception\TelegramRequestException;
 use Botasis\Client\Telegram\Client\Exception\TooManyRequestsException;
 use Botasis\Client\Telegram\Client\Exception\WrongEntitiesException;
-use Botasis\Client\Telegram\Entity\InlineKeyboard\InlineKeyboardUpdate;
-use Botasis\Client\Telegram\Entity\JoinRequestApproval;
-use Botasis\Client\Telegram\Entity\Message\Message;
-use Botasis\Client\Telegram\Entity\Message\MessageUpdate;
+use Botasis\Client\Telegram\Request\InlineKeyboard\InlineKeyboardUpdate;
+use Botasis\Client\Telegram\Request\TelegramRequestInterface;
 use JsonException;
 use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Client\ClientInterface as HttpClientInterface;
@@ -22,7 +20,6 @@ use Psr\Log\NullLogger;
 
 readonly class ClientPsr implements ClientInterface
 {
-
     /**
      * @param string[] $errorsToIgnore
      */
@@ -37,90 +34,64 @@ readonly class ClientPsr implements ClientInterface
     ) {
     }
 
-    /**
-     * @throws ClientExceptionInterface
-     * @throws JsonException
-     */
-    public function sendMessage(Message $message): ?array
+    public function withToken(string $token): ClientInterface
     {
-        return $this->send('sendMessage', $message->getArray());
-    }
-
-    /**
-     * @throws ClientExceptionInterface
-     * @throws JsonException
-     */
-    public function updateMessage(MessageUpdate $message): ?array
-    {
-        return $this->send('editMessageText', $message->getArray());
-    }
-
-    /**
-     * @throws ClientExceptionInterface
-     * @throws JsonException
-     */
-    public function updateKeyboard(InlineKeyboardUpdate $message): ?array
-    {
-        return $this->send('editMessageReplyMarkup', $message->getArray());
-    }
-
-    /**
-     * @throws ClientExceptionInterface
-     * @throws JsonException
-     */
-    public function approveChatJoinRequest(JoinRequestApproval $approval): ?array
-    {
-        return $this->send(
-            'editMessageReplyMarkup',
-            ['chat_id' => $approval->chatId, 'user_id' => $approval->userId]
+        return new self(
+            $token,
+            $this->client,
+            $this->requestFactory,
+            $this->streamFactory,
+            $this->uri,
+            $this->errorsToIgnore,
+            $this->logger
         );
     }
 
     /**
-     * @param string $apiEndpoint Url on the Telegram server domain, e.g. 'sendMessage'
-     * @param array $data Data to be posted to the Telegram server. It will be json encoded.
+     * @param TelegramRequestInterface $request
      *
      * @return array|null
      *
      * @throws ClientExceptionInterface
      * @throws JsonException
      */
-    public function send(string $apiEndpoint, array $data = []): ?array
+    public function send(TelegramRequestInterface $request): ?array
     {
-        $this->logger->info('Sending Telegram request', ['endpoint' => $apiEndpoint, 'data' => $data]);
-        $uri = "$this->uri/bot$this->token/$apiEndpoint";
-        $request = $this->requestFactory->createRequest('POST', $uri);
+        $method = $request->getMethod();
+        $this->logger->info('Sending Telegram request', ['apiMethod' => $method, 'data' => $request->getData()]);
+        $uri = "$this->uri/bot$this->token/$method";
+        $apiRequest = $this->requestFactory->createRequest('POST', $uri);
 
-        if ($data !== []) {
-            $content = json_encode($data, JSON_THROW_ON_ERROR);
-            $request = $request
+        if ($request->getData() !== []) {
+            $content = json_encode($request->getData(), JSON_THROW_ON_ERROR);
+            $apiRequest = $apiRequest
                 ->withHeader('Content-Length', (string) strlen($content))
                 ->withHeader('Content-Type', 'application/json; charset=utf-8')
                 ->withBody($this->streamFactory->createStream($content));
         }
 
-        $response = $this->client->sendRequest($request);
+        $response = $this->client->sendRequest($apiRequest);
         if ($response->getStatusCode() !== 200) {
-            return $this->handleError($apiEndpoint, $data, $response);
+            return $this->handleError($request, $response);
         }
 
         /** @noinspection JsonEncodingApiUsageInspection */
         $responseDecoded = json_decode($response->getBody()->getContents(), true, flags: JSON_THROW_ON_ERROR);
         if (($responseDecoded['ok'] ?? false) !== true) {
-            return $this->handleError($apiEndpoint, $data, $response);
+            return $this->handleError($request, $response);
         }
 
-        return $this->handleSuccess($apiEndpoint, $data, $response, $responseDecoded);
+        return $this->handleSuccess($request, $response, $responseDecoded);
     }
 
-    private function handleError(string $endpoint, array $data, ResponseInterface $response): array
+    private function handleError(TelegramRequestInterface $request, ResponseInterface $response): array
     {
         $content = $response->getBody()->getContents();
         /** @noinspection JsonEncodingApiUsageInspection */
         $decoded = json_decode($content, true);
         $context = [
-            'endpoint' => $endpoint,
-            'data' => $data,
+            'apiMethod' => $request->getMethod(),
+            'data' => $request->getData(),
             'responseRaw' => $content,
             'response' => $decoded,
             'responseCode' => $response->getStatusCode(),
@@ -133,7 +104,7 @@ readonly class ClientPsr implements ClientInterface
                 $context
             );
 
-            return $this->handleSuccess($endpoint, $data, $response, $decoded);
+            return $this->handleSuccess($request, $response, $decoded);
         }
 
         $this->logger->error(
@@ -142,34 +113,37 @@ readonly class ClientPsr implements ClientInterface
         );
 
         if ($response->getStatusCode() === 429) {
-            throw new TooManyRequestsException('Too many requests', $response);
-        }
-
-        if (
+            $exception = new TooManyRequestsException('Too many requests', $response);
+        } elseif (
             is_array($decoded)
             && str_starts_with($decoded['description'] ?? '', 'Bad Request: can\'t parse entities')
         ) {
-            throw new WrongEntitiesException($decoded['description'], $response);
-        }
-
-        if (isset($decoded['description'])) {
-            $message = "Telegram request error: {$decoded['description']}";
+            $exception = new WrongEntitiesException($decoded['description'], $response);
         } else {
-            $message = 'Telegram request error';
+            if (isset($decoded['description'])) {
+                $message = "Telegram request error: {$decoded['description']}";
+            } else {
+                $message = 'Telegram request error';
+            }
+
+            $exception = new TelegramRequestException($message, $response);
         }
 
-        throw new TelegramRequestException($message, $response);
+        if ($request->getErrorCallback() === null) {
+            throw $exception;
+        }
+
+        return $request->getErrorCallback()($response, $decoded, $exception);
     }
 
     private function handleSuccess(
-        string $apiEndpoint,
-        array $data,
+        TelegramRequestInterface $request,
         ResponseInterface $response,
         array $responseDecoded
     ): array {
         $context = [
-            'endpoint' => $apiEndpoint,
-            'data' => $data,
+            'apiMethod' => $request->getMethod(),
+            'data' => $request->getData(),
             'responseRaw' => $response->getBody()->getContents(),
             'response' => $responseDecoded,
             'responseCode' => $response->getStatusCode(),
@@ -179,6 +153,10 @@ readonly class ClientPsr implements ClientInterface
             'Telegram response',
             $context
         );
+
+        if ($request->getSuccessCallback() !== null) {
+            $request->getSuccessCallback()($response, $responseDecoded);
+        }
 
         return $responseDecoded;
     }

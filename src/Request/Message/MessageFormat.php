@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Botasis\Client\Telegram\Entity\Message;
+namespace Botasis\Client\Telegram\Request\Message;
 
 enum MessageFormat: int
 {

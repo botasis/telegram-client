@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Botasis\Client\Telegram\Entity\InlineKeyboard;
+namespace Botasis\Client\Telegram\Request\InlineKeyboard;
 
 final readonly class InlineKeyboardButton
 {

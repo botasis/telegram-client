@@ -4,55 +4,33 @@ declare(strict_types=1);
 
 namespace Botasis\Client\Telegram\Client;
 
-use Botasis\Client\Telegram\Entity\InlineKeyboard\InlineKeyboardUpdate;
-use Botasis\Client\Telegram\Entity\JoinRequestApproval;
-use Botasis\Client\Telegram\Entity\Message\Message;
-use Botasis\Client\Telegram\Entity\Message\MessageUpdate;
+use Botasis\Client\Telegram\Request\InlineKeyboard\InlineKeyboardUpdate;
+use Botasis\Client\Telegram\Request\JoinRequestApproval;
+use Botasis\Client\Telegram\Request\Message\Message;
+use Botasis\Client\Telegram\Request\Message\MessageUpdate;
+use Botasis\Client\Telegram\Request\TelegramRequestInterface;
 use Psr\Log\LoggerInterface;
 
 final readonly class ClientLog implements ClientInterface
 {
-    public function __construct(private LoggerInterface $logger)
+    public function __construct(private string $token, private LoggerInterface $logger)
     {
     }
 
-    public function sendMessage(Message $message): ?array
+    public function withToken(string $token): ClientInterface
     {
-        $this->send('sendMessage', $message->getArray());
-
-        return null;
+        return new self($token, $this->logger);
     }
 
-    public function updateKeyboard(InlineKeyboardUpdate $message): ?array
-    {
-        $this->send('sendMessage', $message->getArray());
-
-        return null;
-    }
-
-    public function updateMessage(MessageUpdate $message): ?array
-    {
-        $this->send('editMessageText', $message->getArray());
-
-        return null;
-    }
-
-    public function send(string $apiEndpoint, array $data = []): ?array
+    public function send(TelegramRequestInterface $request): ?array
     {
         $fields = [
-            'endpoint' => $apiEndpoint,
-            'data' => $data,
+            'token' => $this->token,
+            'endpoint' => $request->getMethod(),
+            'data' => $request->getData(),
         ];
-        $this->logger->debug('A message to Telegram', $fields);
+        $this->logger->debug('A request to the Telegram API', $fields);
 
         return null;
-    }
-
-    public function approveChatJoinRequest(JoinRequestApproval $approval): ?array
-    {
-        return $this->send(
-            'editMessageReplyMarkup',
-            ['chat_id' => $approval->chatId, 'user_id' => $approval->userId]
-        );
     }
 }
