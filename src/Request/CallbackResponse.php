@@ -19,10 +19,13 @@ final class CallbackResponse extends TelegramRequest
     ) {
         $data = [
             'callback_query_id' => $id,
-            'text' => $text,
             'show_alert' => $showAlert,
             'cache_time' => $cacheTime,
         ];
+
+        if ($text !== null) {
+            $data['text'] = $text;
+        }
 
         if ($url !== null) {
             $data['url'] = $url;
