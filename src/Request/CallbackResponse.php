@@ -17,15 +17,20 @@ final class CallbackResponse extends TelegramRequest
         ?callable $successCallback = null,
         ?callable $errorCallback = null,
     ) {
+        $data = [
+            'callback_query_id' => $id,
+            'text' => $text,
+            'show_alert' => $showAlert,
+            'cache_time' => $cacheTime,
+        ];
+
+        if ($url !== null) {
+            $data['url'] = $url;
+        }
+
         parent::__construct(
             self::METHOD,
-            [
-                'callback_query_id' => $id,
-                'text' => $text,
-                'show_alert' => $showAlert,
-                'url' => $url,
-                'cache_time' => $cacheTime,
-            ],
+            $data,
             $successCallback,
             $errorCallback,
         );
