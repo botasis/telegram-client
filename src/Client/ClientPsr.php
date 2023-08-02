@@ -4,14 +4,11 @@ declare(strict_types=1);
 
 namespace Botasis\Client\Telegram\Client;
 
-use Botasis\Client\Telegram\Client\Event\RequestErrorEvent;
-use Botasis\Client\Telegram\Client\Event\RequestSuccessEvent;
 use Botasis\Client\Telegram\Client\Exception\TelegramRequestException;
 use Botasis\Client\Telegram\Client\Exception\TooManyRequestsException;
 use Botasis\Client\Telegram\Client\Exception\WrongEntitiesException;
 use Botasis\Client\Telegram\Request\TelegramRequestInterface;
 use JsonException;
-use Psr\EventDispatcher\EventDispatcherInterface;
 use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Client\ClientInterface as HttpClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
@@ -27,7 +24,6 @@ final readonly class ClientPsr implements ClientInterface
         private HttpClientInterface $client,
         private RequestFactoryInterface $requestFactory,
         private StreamFactoryInterface $streamFactory,
-        private EventDispatcherInterface $eventDispatcher,
         private string $uri = 'https://api.telegram.org',
         private LoggerInterface $logger = new NullLogger(),
     ) {
@@ -40,7 +36,6 @@ final readonly class ClientPsr implements ClientInterface
             $this->client,
             $this->requestFactory,
             $this->streamFactory,
-            $this->eventDispatcher,
             $this->uri,
             $this->logger
         );
@@ -97,12 +92,6 @@ final readonly class ClientPsr implements ClientInterface
         ];
 
         $decoded = $decoded ?: [];
-        /** @var RequestErrorEvent $event */
-        $event = $this->eventDispatcher->dispatch(new RequestErrorEvent($request, $response, $decoded));
-        if (!$event->handledSuccessfully) {
-            return $this->handleSuccess($request, $response, $decoded);
-        }
-
         $this->logger->error(
             'Telegram request error',
             $context
@@ -153,7 +142,6 @@ final readonly class ClientPsr implements ClientInterface
         if ($request->getSuccessCallback() !== null) {
             $request->getSuccessCallback()($response, $responseDecoded);
         }
-        $this->eventDispatcher->dispatch(new RequestSuccessEvent($request, $response, $responseDecoded));
 
         return $responseDecoded;
     }
