@@ -12,6 +12,7 @@ class TelegramRequestException extends RuntimeException
     public function __construct(
         string $message,
         public readonly ResponseInterface|SymfonyResponseInterface $response,
+        public readonly array $responseDecoded,
         int $code = 0,
         Throwable $previous = null
     ) {

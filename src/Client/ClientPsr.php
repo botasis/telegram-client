@@ -98,12 +98,12 @@ final readonly class ClientPsr implements ClientInterface
         );
 
         if ($response->getStatusCode() === 429) {
-            $exception = new TooManyRequestsException('Too many requests', $response);
+            $exception = new TooManyRequestsException('Too many requests', $response, $decoded);
         } elseif (
             is_array($decoded)
             && str_starts_with($decoded['description'] ?? '', 'Bad Request: can\'t parse entities')
         ) {
-            $exception = new WrongEntitiesException($decoded['description'], $response);
+            $exception = new WrongEntitiesException($decoded['description'], $response, $decoded);
         } else {
             if (isset($decoded['description'])) {
                 $message = "Telegram request error: {$decoded['description']}";
@@ -111,7 +111,7 @@ final readonly class ClientPsr implements ClientInterface
                 $message = 'Telegram request error';
             }
 
-            $exception = new TelegramRequestException($message, $response);
+            $exception = new TelegramRequestException($message, $response, $decoded);
         }
 
         if ($request->getErrorCallback() === null) {
