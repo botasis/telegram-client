@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace Botasis\Client\Telegram\Client;
 
+use Botasis\Client\Telegram\Client\Event\RequestErrorEvent;
+use Botasis\Client\Telegram\Client\Event\RequestSuccessEvent;
 use Botasis\Client\Telegram\Client\Exception\TelegramRequestException;
 use Botasis\Client\Telegram\Client\Exception\TooManyRequestsException;
 use Botasis\Client\Telegram\Client\Exception\WrongEntitiesException;
-use Botasis\Client\Telegram\Request\InlineKeyboard\InlineKeyboardUpdate;
 use Botasis\Client\Telegram\Request\TelegramRequestInterface;
 use JsonException;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Client\ClientInterface as HttpClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
@@ -18,18 +20,15 @@ use Psr\Http\Message\StreamFactoryInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 
-readonly class ClientPsr implements ClientInterface
+final readonly class ClientPsr implements ClientInterface
 {
-    /**
-     * @param string[] $errorsToIgnore
-     */
     public function __construct(
         private string $token,
         private HttpClientInterface $client,
         private RequestFactoryInterface $requestFactory,
         private StreamFactoryInterface $streamFactory,
+        private EventDispatcherInterface $eventDispatcher,
         private string $uri = 'https://api.telegram.org',
-        private array $errorsToIgnore = [],
         private LoggerInterface $logger = new NullLogger(),
     ) {
     }
@@ -41,8 +40,8 @@ readonly class ClientPsr implements ClientInterface
             $this->client,
             $this->requestFactory,
             $this->streamFactory,
+            $this->eventDispatcher,
             $this->uri,
-            $this->errorsToIgnore,
             $this->logger
         );
     }
@@ -98,12 +97,9 @@ readonly class ClientPsr implements ClientInterface
         ];
 
         $decoded = $decoded ?: [];
-        if (in_array($decoded['description'] ?? '', $this->errorsToIgnore, true)) {
-            $this->logger->info(
-                'Ignored error occurred while sending Telegram request',
-                $context
-            );
-
+        /** @var RequestErrorEvent $event */
+        $event = $this->eventDispatcher->dispatch(new RequestErrorEvent($request, $response, $decoded));
+        if (!$event->handledSuccessfully) {
             return $this->handleSuccess($request, $response, $decoded);
         }
 
@@ -157,6 +153,7 @@ readonly class ClientPsr implements ClientInterface
         if ($request->getSuccessCallback() !== null) {
             $request->getSuccessCallback()($response, $responseDecoded);
         }
+        $this->eventDispatcher->dispatch(new RequestSuccessEvent($request, $response, $responseDecoded));
 
         return $responseDecoded;
     }
