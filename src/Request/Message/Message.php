@@ -19,6 +19,7 @@ final class Message extends TelegramRequest
         public readonly string $chatId,
         public readonly array $inlineKeyboard = [],
         public readonly bool $disableLinkPreview = false,
+        public readonly ?string $replyToMessageId  = null,
         ?callable $successCallback = null,
         ?callable $errorCallback = null,
     ) {
@@ -33,6 +34,7 @@ final class Message extends TelegramRequest
             $this->chatId,
             $this->inlineKeyboard,
             $this->disableLinkPreview,
+            $this->replyToMessageId,
             $this->successCallback,
             $this->errorCallback,
         );
@@ -46,6 +48,7 @@ final class Message extends TelegramRequest
             $this->chatId,
             $this->inlineKeyboard,
             $this->disableLinkPreview,
+            $this->replyToMessageId,
             $this->successCallback,
             $this->errorCallback,
         );
@@ -59,6 +62,7 @@ final class Message extends TelegramRequest
             $chatId,
             $this->inlineKeyboard,
             $this->disableLinkPreview,
+            $this->replyToMessageId,
             $this->successCallback,
             $this->errorCallback,
         );
@@ -75,6 +79,7 @@ final class Message extends TelegramRequest
             $this->chatId,
             $inlineKeyboard,
             $this->disableLinkPreview,
+            $this->replyToMessageId,
             $this->successCallback,
             $this->errorCallback,
         );
@@ -88,6 +93,7 @@ final class Message extends TelegramRequest
             $this->chatId,
             $this->inlineKeyboard,
             $disableLinkPreview,
+            $this->replyToMessageId,
             $this->successCallback,
             $this->errorCallback,
         );
@@ -99,7 +105,8 @@ final class Message extends TelegramRequest
         'chat_id' => "string",
         'disable_web_page_preview' => "bool",
         'parse_mode' => "string",
-        'reply_markup' => "null|array"
+        'reply_markup' => "null|array",
+        'reply_to_message_id' => "null|string",
     ])]
     private function createData(): array
     {
@@ -122,6 +129,10 @@ final class Message extends TelegramRequest
                     'callback_data' => $button->callbackData,
                 ];
             }
+        }
+
+        if ($this->replyToMessageId !== null) {
+            $result['reply_to_message_id'] = $this->replyToMessageId;
         }
 
         return $result;
