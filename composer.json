@@ -23,7 +23,7 @@
     "phpunit/phpunit": "^10.1",
     "roave/infection-static-analysis-plugin": "^1.16",
     "symfony/console": "^6.2",
-    "symfony/http-client": "^6.2",
+    "symfony/http-client": "^7.0",
     "vimeo/psalm": "^5.4"
   },
   "suggest": {
