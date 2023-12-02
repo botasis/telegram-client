@@ -161,7 +161,6 @@ final readonly class ClientPsr implements ClientInterface
             $streamBuilder->addResource($file->name, $file->data);
         }
 
-        // converts ['key' => [['key2' => 'value']]] into "key[0][key2]" and "value"
         foreach ($this->getMultipartFields($request->getData()) as [$field, $contents]) {
             $streamBuilder->addResource($field, $contents);
         }
@@ -194,17 +193,17 @@ final readonly class ClientPsr implements ClientInterface
             ->withBody($body);
     }
 
-    private function getMultipartFields(array $data, string $prefix = ''): Generator
+    /**
+     * @return Generator<string, string>
+     */
+    private function getMultipartFields(array $data): Generator
     {
         foreach ($data as $key => $value) {
-            if ($prefix !== '') {
-                $key = "[$key]";
-            }
-
             if (is_array($value)) {
-                yield from $this->getMultipartFields($value, $prefix . $key);
+                $value = json_encode($value, JSON_THROW_ON_ERROR);
+                yield [(string)$key, $value];
             } else {
-                yield [$prefix . $key, (string)$value];
+                yield [(string)$key, (string)$value];
             }
         }
     }
