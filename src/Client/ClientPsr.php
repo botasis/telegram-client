@@ -194,9 +194,9 @@ final readonly class ClientPsr implements ClientInterface
     }
 
     /**
-     * @return Generator<string, string>
+     * @return Generator<int, list{string, string}, mixed, void>
      */
-    private function getMultipartFields(array $data): Generator
+    private function getMultipartFields(array $data): iterable
     {
         foreach ($data as $key => $value) {
             if (is_array($value)) {

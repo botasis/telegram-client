@@ -7,14 +7,14 @@ namespace Botasis\Client\Telegram\Request;
 class TelegramRequest implements TelegramRequestInterface
 {
     /**
-     * @var callable|null $successCallback
-     * @var callable|null $errorCallback
+     * @param callable|null $successCallback
+     * @param callable|null $errorCallback
      */
     public function __construct(
         protected string $method,
         protected array $data = [],
-        protected $successCallback = null,
-        protected $errorCallback = null,
+        protected mixed $successCallback = null,
+        protected mixed $errorCallback = null,
         protected array $files = [],
     ) {
         $this->extractFiles($this->data);

@@ -46,6 +46,7 @@ interface TelegramRequestInterface
     /**
      * Returns success callback if it was set
      *
+     * @psalm-pure
      * @return callable|null
      * @psalm-return callable(ResponseInterface=, array=): void|null
      */
@@ -69,6 +70,7 @@ interface TelegramRequestInterface
     /**
      * Returns error callback if it was set
      *
+     * @psalm-pure
      * @return callable|null
      * @psalm-return callable(ResponseInterface=, array=, Throwable=): array|null
      */
