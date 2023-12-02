@@ -8,10 +8,13 @@ use Botasis\Client\Telegram\Client\Exception\TelegramRequestException;
 use Botasis\Client\Telegram\Client\Exception\TooManyRequestsException;
 use Botasis\Client\Telegram\Client\Exception\WrongEntitiesException;
 use Botasis\Client\Telegram\Request\TelegramRequestInterface;
+use Generator;
+use Http\Message\MultipartStream\MultipartStreamBuilder;
 use JsonException;
 use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Client\ClientInterface as HttpClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
+use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 use Psr\Log\LoggerInterface;
@@ -19,14 +22,18 @@ use Psr\Log\NullLogger;
 
 final readonly class ClientPsr implements ClientInterface
 {
+    private MultipartStreamBuilder $multipartStreamBuilder;
+
     public function __construct(
         private string $token,
         private HttpClientInterface $client,
         private RequestFactoryInterface $requestFactory,
         private StreamFactoryInterface $streamFactory,
+        MultipartStreamBuilder $multipartStreamBuilder,
         private string $uri = 'https://api.telegram.org',
         private LoggerInterface $logger = new NullLogger(),
     ) {
+        $this->multipartStreamBuilder = clone $multipartStreamBuilder;
     }
 
     public function withToken(string $token): ClientInterface
@@ -36,6 +43,7 @@ final readonly class ClientPsr implements ClientInterface
             $this->client,
             $this->requestFactory,
             $this->streamFactory,
+            $this->multipartStreamBuilder,
             $this->uri,
             $this->logger
         );
@@ -56,12 +64,10 @@ final readonly class ClientPsr implements ClientInterface
         $uri = "$this->uri/bot$this->token/$method";
         $apiRequest = $this->requestFactory->createRequest('POST', $uri);
 
-        if ($request->getData() !== []) {
-            $content = json_encode($request->getData(), JSON_THROW_ON_ERROR);
-            $apiRequest = $apiRequest
-                ->withHeader('Content-Length', (string) strlen($content))
-                ->withHeader('Content-Type', 'application/json; charset=utf-8')
-                ->withBody($this->streamFactory->createStream($content));
+        if ($request->getFiles() !== []) {
+            $apiRequest = $this->enrichMultipartRequest($apiRequest, $request);
+        } else {
+            $apiRequest = $this->enrichJsonRequest($apiRequest, $request);
         }
 
         $response = $this->client->sendRequest($apiRequest);
@@ -144,5 +150,62 @@ final readonly class ClientPsr implements ClientInterface
         }
 
         return $responseDecoded;
+    }
+
+    private function enrichMultipartRequest(
+        RequestInterface $apiRequest,
+        TelegramRequestInterface $request,
+    ): RequestInterface {
+        $streamBuilder = clone $this->multipartStreamBuilder;
+        foreach ($request->getFiles() as $file) {
+            $streamBuilder->addResource($file->name, $file->data);
+        }
+
+        // converts ['key' => [['key2' => 'value']]] into "key[0][key2]" and "value"
+        foreach ($this->getMultipartFields($request->getData()) as [$field, $contents]) {
+            $streamBuilder->addResource($field, $contents);
+        }
+
+        $body = $streamBuilder->build();
+
+        return $apiRequest
+            ->withHeader(
+                'Content-Type',
+                'multipart/form-data; boundary=' . $streamBuilder->getBoundary() . '; charset=utf-8',
+            )
+            ->withHeader('Content-Length', (string)$body->getSize())
+            ->withBody($body);
+    }
+
+    private function enrichJsonRequest(
+        RequestInterface $apiRequest,
+        TelegramRequestInterface $request,
+    ): RequestInterface {
+        if ($request->getData() === []) {
+            return $apiRequest;
+        }
+
+        $content = json_encode($request->getData(), JSON_THROW_ON_ERROR);
+        $body = $this->streamFactory->createStream($content);
+
+        return $apiRequest
+            ->withHeader('Content-Length', (string)$body->getSize())
+            ->withHeader('Content-Type', 'application/json; charset=utf-8')
+            ->withBody($body);
+    }
+
+    private function getMultipartFields(array $data, string $prefix = ''): Generator
+    {
+        foreach ($data as $key => $value) {
+            if ($prefix !== '') {
+                $key = "[$key]";
+            }
+
+            if (is_array($value)) {
+                yield from $this->getMultipartFields($value, $prefix . $key);
+            } else {
+                yield [$prefix . $key, (string)$value];
+            }
+        }
     }
 }

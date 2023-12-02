@@ -25,6 +25,11 @@ interface TelegramRequestInterface
     public function getData(): array;
 
     /**
+     * @return array<FileUpload>
+     */
+    public function getFiles(): array;
+
+    /**
      * Sets a callback which will be called when the request is successfully finished
      *  Callback must have a such signature: function(
      *      \Psr\Http\Message\ResponseInterface $response, // Telegram API response
