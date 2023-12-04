@@ -24,7 +24,7 @@
     "maglnet/composer-require-checker": "^4.5",
     "phpunit/phpunit": "^10.1",
     "roave/infection-static-analysis-plugin": "^1.16",
-    "symfony/console": "^6.2",
+    "symfony/console": "^7.0",
     "symfony/http-client": "^6.2",
     "vimeo/psalm": "^5.4"
   },
