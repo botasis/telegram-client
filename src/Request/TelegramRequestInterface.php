@@ -30,6 +30,8 @@ interface TelegramRequestInterface
     public function getFiles(): array;
 
     /**
+     * @deprecated Will be removed in 2.0
+     *
      * Sets a callback which will be called when the request is successfully finished
      *  Callback must have a such signature: function(
      *      \Psr\Http\Message\ResponseInterface $response, // Telegram API response
@@ -44,6 +46,8 @@ interface TelegramRequestInterface
     public function onSuccess(?callable $callback): self;
 
     /**
+     * @deprecated Will be removed in 2.0
+     *
      * Returns success callback if it was set
      *
      * @psalm-pure
@@ -53,6 +57,8 @@ interface TelegramRequestInterface
     public function getSuccessCallback(): ?callable;
 
     /**
+     * @deprecated Will be removed in 2.0
+     *
      * Sets a callback which will be called when the request is finished with an error
      *  Callback must have a such signature: function(
      *      \Psr\Http\Message\ResponseInterface $response, // Telegram API response
@@ -68,6 +74,8 @@ interface TelegramRequestInterface
     public function onError(?callable $callback): self;
 
     /**
+     * @deprecated Will be removed in 2.0
+     *
      * Returns error callback if it was set
      *
      * @psalm-pure
