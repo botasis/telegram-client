@@ -28,11 +28,11 @@ Ensure you have [Composer](https://getcomposer.org/doc/00-intro.md) installed an
    ```php
    $streamFactory = new \HttpSoft\Message\StreamFactory();
    $client = new \Botasis\Client\Telegram\Client\ClientPsr(
-   getenv('BOT_TOKEN'),
-   new \Http\Client\Socket\Client(),
-   new \HttpSoft\Message\RequestFactory(),
-   $streamFactory,
-   new \Http\Message\MultipartStream\MultipartStreamBuilder($streamFactory),
+       getenv('BOT_TOKEN'),
+       new \Http\Client\Socket\Client(),
+       new \HttpSoft\Message\RequestFactory(),
+       $streamFactory,
+       new \Http\Message\MultipartStream\MultipartStreamBuilder($streamFactory),
    );
    ```
 
