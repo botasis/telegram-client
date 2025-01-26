@@ -99,15 +99,15 @@ final class Message extends TelegramRequest
         );
     }
 
-    /** @psalm-suppress UndefinedAttributeClass */
-    #[ArrayShape([
-        'text' => "string",
-        'chat_id' => "string",
-        'disable_web_page_preview' => "bool",
-        'parse_mode' => "string",
-        'reply_markup' => "null|array",
-        'reply_to_message_id' => "null|string",
-    ])]
+    /** @psalm-return array{
+     *     text: string,
+     *     chat_id: string,
+     *     disable_web_page_preview: bool,
+     *     parse_mode?: string,
+     *     reply_markup?: array,
+     *     reply_to_message_id?: string,
+     * }
+     **/
     private function createData(): array
     {
         $result = [
@@ -124,10 +124,7 @@ final class Message extends TelegramRequest
 
         foreach ($this->inlineKeyboard as $i => $row) {
             foreach ($row as $button) {
-                $result['reply_markup']['inline_keyboard'][$i][] = [
-                    'text' => $button->label,
-                    'callback_data' => $button->callbackData,
-                ];
+                $result['reply_markup']['inline_keyboard'][$i][] = $button->getData();
             }
         }
 

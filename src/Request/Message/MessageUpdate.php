@@ -149,10 +149,7 @@ final class MessageUpdate extends TelegramRequest
 
         foreach ($this->inlineKeyboard as $i => $row) {
             foreach ($row as $button) {
-                $result['reply_markup']['inline_keyboard'][$i][] = [
-                    'text' => $button->label,
-                    'callback_data' => $button->callbackData,
-                ];
+                $result['reply_markup']['inline_keyboard'][$i][] = $button->getData();
             }
         }
 
