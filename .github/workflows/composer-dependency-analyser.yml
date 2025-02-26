@@ -8,6 +8,7 @@ on:
       - '.gitattributes'
       - 'infection.json.dist'
       - 'phpunit.xml.dist'
+      - 'psalm.xml'
 
   push:
     paths-ignore:
@@ -18,12 +19,16 @@ on:
       - '.gitattributes'
       - 'infection.json.dist'
       - 'phpunit.xml.dist'
+      - 'psalm.xml'
 
-name: static analysis
+name: Composer dependency analyser
 
 jobs:
-  mutation:
+  composer-dependency-analyser:
     name: PHP ${{ matrix.php }}-${{ matrix.os }}
+
+    env:
+      key: cache-v1
 
     runs-on: ${{ matrix.os }}
 
@@ -43,16 +48,20 @@ jobs:
 
       - name: Install PHP
         uses: shivammathur/setup-php@v2
+        env:
+          update: true
         with:
           php-version: ${{ matrix.php }}
-          tools: composer:v2, cs2pr
+          ini-values: date.timezone='UTC'
           coverage: none
+          tools: composer:v2
 
-      - name: Determine composer cache directory
+      - name: Determine composer cache directory on Linux
+        if: matrix.os == 'ubuntu-latest'
         run: echo "COMPOSER_CACHE_DIR=$(composer config cache-dir)" >> $GITHUB_ENV
 
       - name: Cache dependencies installed with composer
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: ${{ env.COMPOSER_CACHE_DIR }}
           key: php${{ matrix.php }}-composer-${{ hashFiles('**/composer.json') }}
@@ -65,5 +74,5 @@ jobs:
       - name: Install dependencies with composer
         run: composer update --prefer-dist --no-interaction --no-progress --optimize-autoloader --ansi
 
-      - name: Static analysis
-        run: vendor/bin/psalm --shepherd --stats --output-format=checkstyle | cs2pr --graceful-warnings --colorize
+      - name: Analyse project dependencies
+        run: vendor/bin/composer-dependency-analyser
