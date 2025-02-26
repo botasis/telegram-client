@@ -103,6 +103,7 @@ final readonly class ClientPsr implements ClientInterface
             $context
         );
 
+        /** @psalm-suppress DocblockTypeContradiction */
         if ($response->getStatusCode() === 429) {
             $exception = new TooManyRequestsException('Too many requests', $response, $decoded);
         } elseif (
@@ -120,10 +121,12 @@ final readonly class ClientPsr implements ClientInterface
             $exception = new TelegramRequestException($message, $response, $decoded);
         }
 
+        /** @psalm-suppress DeprecatedMethod */
         if ($request->getErrorCallback() === null) {
             throw $exception;
         }
 
+        /** @psalm-suppress DeprecatedMethod */
         return $request->getErrorCallback()($response, $decoded, $exception);
     }
 
@@ -145,7 +148,9 @@ final readonly class ClientPsr implements ClientInterface
             $context
         );
 
+        /** @psalm-suppress DeprecatedMethod */
         if ($request->getSuccessCallback() !== null) {
+            /** @psalm-suppress DeprecatedMethod */
             $request->getSuccessCallback()($response, $responseDecoded);
         }
 

@@ -2,6 +2,6 @@
 
 namespace Botasis\Client\Telegram\Client\Exception;
 
-class WrongEntitiesException extends TelegramRequestException
+final class WrongEntitiesException extends TelegramRequestException
 {
 }
