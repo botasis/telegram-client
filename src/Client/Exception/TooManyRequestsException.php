@@ -2,6 +2,9 @@
 
 namespace Botasis\Client\Telegram\Client\Exception;
 
-final class TooManyRequestsException extends TelegramRequestException
+/**
+ * @psalm-suppress ClassMustBeFinal Class will be finalised in version 2.0
+ */
+class TooManyRequestsException extends TelegramRequestException
 {
 }
