@@ -4,7 +4,6 @@ namespace Botasis\Client\Telegram\Client\Exception;
 
 use Psr\Http\Message\ResponseInterface;
 use RuntimeException;
-use Symfony\Contracts\HttpClient\ResponseInterface as SymfonyResponseInterface;
 use Throwable;
 
 class TelegramRequestException extends RuntimeException
