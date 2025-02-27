@@ -87,7 +87,10 @@ final readonly class ClientPsr implements ClientInterface
     private function handleError(TelegramRequestInterface $request, ResponseInterface $response): array
     {
         $content = $response->getBody()->getContents();
-        /** @noinspection JsonEncodingApiUsageInspection */
+        /**
+         * @noinspection JsonEncodingApiUsageInspection
+         * @var array|false $decoded
+         **/
         $decoded = json_decode($content, true);
         $context = [
             'apiMethod' => $request->getMethod(),
@@ -97,6 +100,7 @@ final readonly class ClientPsr implements ClientInterface
             'responseCode' => $response->getStatusCode(),
         ];
 
+        /** @psalm-suppress RiskyTruthyFalsyComparison */
         $decoded = $decoded ?: [];
         $this->logger->error(
             'Telegram request error',
@@ -107,8 +111,7 @@ final readonly class ClientPsr implements ClientInterface
         if ($response->getStatusCode() === 429) {
             $exception = new TooManyRequestsException('Too many requests', $response, $decoded);
         } elseif (
-            is_array($decoded)
-            && str_starts_with($decoded['description'] ?? '', 'Bad Request: can\'t parse entities')
+            str_starts_with($decoded['description'] ?? '', 'Bad Request: can\'t parse entities')
         ) {
             $exception = new WrongEntitiesException($decoded['description'], $response, $decoded);
         } else {
@@ -121,13 +124,7 @@ final readonly class ClientPsr implements ClientInterface
             $exception = new TelegramRequestException($message, $response, $decoded);
         }
 
-        /** @psalm-suppress DeprecatedMethod */
-        if ($request->getErrorCallback() === null) {
-            throw $exception;
-        }
-
-        /** @psalm-suppress DeprecatedMethod */
-        return $request->getErrorCallback()($response, $decoded, $exception);
+        throw $exception;
     }
 
     private function handleSuccess(
@@ -147,12 +144,6 @@ final readonly class ClientPsr implements ClientInterface
             'Telegram response',
             $context
         );
-
-        /** @psalm-suppress DeprecatedMethod */
-        if ($request->getSuccessCallback() !== null) {
-            /** @psalm-suppress DeprecatedMethod */
-            $request->getSuccessCallback()($response, $responseDecoded);
-        }
 
         return $responseDecoded;
     }
