@@ -9,6 +9,7 @@ class TelegramRequest implements TelegramRequestInterface
     /**
      * @param callable|null $successCallback
      * @param callable|null $errorCallback
+     * @param array<FileUpload> $files
      */
     public function __construct(
         protected string $method,
@@ -28,30 +29,6 @@ class TelegramRequest implements TelegramRequestInterface
     public function getData(): array
     {
         return $this->data;
-    }
-
-    public function onSuccess(?callable $callback): TelegramRequestInterface
-    {
-        $this->successCallback = $callback;
-
-        return $this;
-    }
-
-    public function getSuccessCallback(): ?callable
-    {
-        return $this->successCallback;
-    }
-
-    public function onError(?callable $callback): TelegramRequestInterface
-    {
-        $this->errorCallback = $callback;
-
-        return $this;
-    }
-
-    public function getErrorCallback(): ?callable
-    {
-        return $this->errorCallback;
     }
 
     public function addFiles(FileUpload ...$files): self
