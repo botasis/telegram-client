@@ -4,9 +4,6 @@ declare(strict_types=1);
 
 namespace Botasis\Client\Telegram\Request;
 
-use Psr\Http\Message\ResponseInterface;
-use Throwable;
-
 interface TelegramRequestInterface
 {
     /**
